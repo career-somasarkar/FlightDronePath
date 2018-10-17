@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Drone</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+        
+        <link rel="stylesheet" href="assets/bootstrap/css/bootstrap.min.css"/>
+        <!-- <script src="assets/bootstrap/js/bootstrap.min.js"></script> -->
+
+        <link rel="stylesheet" href="assets/app.css"/>
+
+        
+    </head>
+
+    <body>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <h4>Saved Plans</h4>
+                            <hr/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="list-group" id="planList-div">                               
+                                
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-9">
+                    <div class="row">
+                        <div class="col-12">
+                            <h4>Flight Plan</h4>
+                            <hr/>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="map-view-header">
+                                <button id="start-btn" class="btn btn-primary" >Start</button>
+                                <button id="stop-btn" class="btn btn-default" >Stop</button>
+                                <button id="save-btn" class="btn btn-default">Save</button>
+                                <span>Click on the canvas to collect multiple points</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-8">
+                            <canvas id="myCanvas" width="800" height="800"></canvas>
+                        </div>
+                        <div class="col-4" id="collected-points-view">
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.getElementById("start-btn").disabled = false;
+            document.getElementById("stop-btn").disabled = true;
+            document.getElementById("save-btn").disabled = true;
+
+            function Point(x, y){
+                this.x = x;
+                this.y = y;
+            }
+            
+            function Plan(name, locations){
+                this.name = name;
+                this.locations = locations;
+            }         
+            
+
+            var start=false;
+
+            
+            document.getElementById("stop-btn").addEventListener("click", disableStart);
+            var savedPlans = [];
+            var points = [];
+            var canvas = document.getElementById("myCanvas");
+            canvas.onclick = (e) => {
+                btn = e.button;
+                canvasX = e.offsetX;
+                canvasY = e.offsetY;
+                console.log(btn, canvasX, canvasY, start)
+                if(start){
+                    p = new Point(canvasX, canvasY);
+                    points.push(p);
+                    drawLines(points)
+                    var node = document.createElement("LI");                 // Create a <li> node
+                    var textnode = document.createTextNode("" + p.x + ", " + p.y);         // Create a text node
+                    node.appendChild(textnode);                              // Append the text to <li>
+                    document.getElementById("collected-points-view").appendChild(node);     // Append <li> to <ul> with id="myList" 
+
+                }
+                
+            }
+
+
+            function enableStart(){
+                console.log("enableStart")
+                start = true;
+                points = []
+                refreshCanvas()
+                document.getElementById("start-btn").disabled = true;
+                document.getElementById("stop-btn").disabled = false;
+                document.getElementById("save-btn").disabled = true;
+            }
+
+            document.getElementById("start-btn").addEventListener("click", enableStart);
+
+            function disableStart(){
+                console.log("disableStart")
+                start = false;
+                document.getElementById("start-btn").disabled = false;
+                document.getElementById("stop-btn").disabled = true;
+                document.getElementById("save-btn").disabled = false;
+                drawLines(points);
+            }
+
+            function drawLines(points){
+                console.log("drawLines")
+                if(points && points.length > 1){
+                    var context = canvas.getContext("2d");
+                    context.beginPath();
+                    var prevPoint = points[0];
+                    for(i=1; i<points.length; i++){
+                        var nextPoint = points[i];
+                        context.moveTo(prevPoint.x, prevPoint.y);
+                        context.lineTo(nextPoint.x, nextPoint.y);
+                        context.stroke();
+                        prevPoint = nextPoint;
+                    }
+
+                }
+
+            }
+
+            function savePlan(){
+                var name = prompt("enter plan name");
+                savedPlans.push(new Plan(name, points));
+                console.log(savedPlans)
+                points = []
+                refreshPlanList()
+                refreshCanvas()
+            }    
+            
+            document.getElementById("save-btn").addEventListener("click", savePlan);
+
+            
+
+            function refreshPlanList(){
+                // <a href="#" class="list-group-item list-group-item-action"></a>
+                var parent  = document.getElementById("planList-div");
+                while (parent.firstChild) {
+                    parent.removeChild(parent.firstChild);
+                }
+                savedPlans.map(plan =>{
+                    var ancor = document.createElement("a");
+                    ancor.classList.add("list-group-item");
+                    ancor.classList.add("list-group-item-action");
+                    var textnode = document.createTextNode(plan.name);
+                    ancor.onclick= function(){showSavedPlan(plan)};
+                    ancor.appendChild(textnode); 
+                    parent.appendChild(ancor);
+                })
+            }
+            
+            function showSavedPlan(currentPlan){
+                console.log(currentPlan.name);
+                refreshCanvas()
+                drawLines(currentPlan.locations)
+            }
+
+            function refreshCanvas(){
+                var pointView = document.getElementById("collected-points-view");
+                while (pointView.firstChild) {
+                    pointView.removeChild(pointView.firstChild);
+                }
+                const context = canvas.getContext('2d');
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                document.getElementById("save-btn").disabled = true;
+            }
+            
+
+        </script>
+    </body>
+</html>
